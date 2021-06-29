@@ -85,6 +85,8 @@ Resources:
     Type: AWS::CloudFront::Distribution
     Properties:
       DistributionConfig:
+        Aliases:
+          - "twitter.enpalm.se"
         DefaultCacheBehavior: 
           AllowedMethods: # Which methods to forward to S3
             - GET
@@ -114,8 +116,10 @@ Resources:
             S3OriginConfig:
               OriginAccessIdentity: !Sub origin-access-identity/cloudfront/${CloudFrontOriginAccessIdentity}
         IPV6Enabled: false
-        ViewerCertificate: 
-          CloudFrontDefaultCertificate: true
+        ViewerCertificate:
+          AcmCertificateArn: arn:aws:acm:us-east-1:641758013508:certificate/c39e3808-3fbb-4457-80c2-f59039fbfc20
+          MinimumProtocolVersion: TLSv1
+          SslSupportMethod: sni-only
       Tags:
         - Key: project
           Value: !Sub ${EnvironmentName}
@@ -341,7 +345,7 @@ Resources:
               "ForAnyValue:StringLike":
                 "cognito-identity.amazonaws.com:amr": unauthenticated
       Policies:
-        - PolicyName: CognitoUnauth-Policy
+        - PolicyName: !Sub ${EnvironmentName}-CognitoUnAuth-Policy
           PolicyDocument:
             Version: "2012-10-17"
             Statement:
@@ -384,7 +388,8 @@ Resources:
                 Action:
                   - "quicksight:RegisterUser"
                   - "quicksight:GetDashboardEmbedUrl"
-                Resource: !Sub "*"
+                  - "quicksight:GetAnonymousUserEmbedUrl"
+                Resource: "*"
 
   # Assigns the roles to the Identity Pool
   IdentityPoolRoleMapping:
@@ -396,9 +401,6 @@ Resources:
         unauthenticated: !GetAtt CognitoUnAuthorizedRole.Arn  
 
 Outputs:
-  CodePipelineArtifactStoreBucket:
-    Description: Bucket used for storing codepieline artifacts
-    Value: !Ref CodePipelineArtifactStoreBucket
   DomainName:
     Description: Cloudfront Domain
     Value: !GetAtt cloudfrontDistribution.DomainName
