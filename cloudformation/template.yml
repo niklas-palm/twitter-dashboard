@@ -386,9 +386,7 @@ Resources:
                 Resource: "*"
               - Effect: "Allow"
                 Action:
-                  - "quicksight:RegisterUser"
-                  - "quicksight:GetDashboardEmbedUrl"
-                  - "quicksight:GetAnonymousUserEmbedUrl"
+                  - "execute-api:*"
                 Resource: "*"
 
   # Assigns the roles to the Identity Pool
@@ -399,6 +397,67 @@ Resources:
       Roles:
         authenticated: !GetAtt CognitoAuthorizedRole.Arn
         unauthenticated: !GetAtt CognitoUnAuthorizedRole.Arn  
+
+   ################## 
+  # Gen Dashboard URL #
+   ##################  
+
+  GenEmbedUrlLambda:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: ./Functions/GenEmbedUrl.handler
+      Runtime: nodejs12.x
+      MemorySize: 128
+      Timeout: 10
+      Description: Generates QuickSight embedded URL for application
+      Tracing: Active
+      Policies:
+        - Version: '2012-10-17' 
+          Statement:
+            - Effect: "Allow"
+              Action:
+                - "quicksight:RegisterUser"
+                - "quicksight:GetDashboardEmbedUrl"
+                - "quicksight:GetAnonymousUserEmbedUrl"
+              Resource: "*"
+      Environment:
+        Variables:
+          AWS_ACCOUNT_ID: !Ref AWS::AccountId
+      Events:
+        Root:
+          Type: Api
+          Properties:
+            RestApiId: !Ref MyApi
+            Path: /
+            Method: GET
+      Tags:
+        project: !Ref EnvironmentName
+
+  # MyApi:
+  #   Type: AWS::Serverless::Api
+  #   Properties:
+  #     StageName: Prod
+  #     Cors: "'*'"
+  #     Auth:
+  #       DefaultAuthorizer: MyCognitoAuthorizer
+  #       Authorizers:
+  #         MyCognitoAuthorizer:
+  #           UserPoolArn: !GetAtt UserPool.Arn
+
+  MyApi:
+    Type: AWS::Serverless::Api
+    Properties:
+      DefinitionBody:
+        Fn::Transform:
+          Name: "AWS::Include"
+          Parameters:
+            Location: "./openapi.yml"
+      EndpointConfiguration: REGIONAL
+      StageName: prod
+      TracingEnabled: true
+      Tags:
+        project: !Ref EnvironmentName
+
 
 Outputs:
   DomainName:
@@ -412,3 +471,6 @@ Outputs:
     Value: !Ref UserPoolClient
   IdentityPoolId:
     Value: !Ref IdentityPool
+  WebEndpoint:
+    Description: "API Gateway endpoint URL for prod stage"
+    Value: !Sub "https://${MyApi}.execute-api.${AWS::Region}.amazonaws.com/prod/"
