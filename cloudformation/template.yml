@@ -158,13 +158,6 @@ Resources:
                 Repo: !Ref GithubRepoName
                 Branch: !Ref GithubBranchName
                 OAuthToken: !Ref GithubOAuthToken # This is written in plaintext in console. Better to use secrets manager: {{resolve:secretsmanager:MyGitHubSecret:SecretString:token}}
-                # OAuthToken: !Join 
-                #   - ''
-                #   - - '{{resolve:secretsmanager:'
-                #     - !Ref GithubSecretName
-                #     - ':SecretString:'
-                #     - !Ref GithubSecretNameKey
-                #     - '}}'
               RunOrder: 1
         - Name: Build
           Actions:
@@ -241,6 +234,15 @@ Resources:
         EnvironmentVariables: # Inject env variables into codeBuild (accessible as ${Name} in the buildspec.yml)
           - Name: HOSTING_BUCKET
             Value: !Ref HostingBucket
+          - Name: IDENTITY_POOL_ID
+            Value: !Ref IdentityPool
+          - Name: AWS_REGION
+            Value: !Ref AWS::Region
+          - Name: USERPOOL_ID
+            Value: !Ref UserPool
+          - Name: USERPOOL_CLIENT_ID
+            Value: !Ref UserPoolClient
+
       Tags:
         - Key: project
           Value: !Ref EnvironmentName
@@ -442,8 +444,6 @@ Outputs:
     Value: !GetAtt cloudfrontDistribution.DomainName
   UserPoolId:
     Value: !Ref UserPool
-  UserPoolARN:
-    Value: !GetAtt UserPool.Arn
   UserPoolClientId:
     Value: !Ref UserPoolClient
   IdentityPoolId:
