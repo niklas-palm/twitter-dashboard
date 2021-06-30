@@ -6,9 +6,9 @@ import {
   AmplifySignIn,
 } from "@aws-amplify/ui-react";
 import { AuthState, onAuthUIStateChange } from "@aws-amplify/ui-components";
-import awsconfig from "./aws-exports.js";
 import { embedDashboard } from "amazon-quicksight-embedding-sdk";
 
+import awsconfig from "./aws-exports.js";
 import { getUrl } from "./getEmbedUrl";
 
 import "./App.scss";
@@ -26,24 +26,24 @@ const App = () => {
     });
   }, []);
 
-  console.log(user);
-
-  const onClick = async () => {
-    const url = await getUrl();
-    const options = {
-      url,
-      container: document.getElementById("dashboard"),
-      scrolling: "no",
+  useEffect(() => {
+    const visualizeDashboard = async () => {
+      const url = await getUrl();
+      const options = {
+        url,
+        container: document.getElementById("dashboard"),
+      };
+      embedDashboard(options);
     };
-    console.log(options);
-    const dashboard = embedDashboard(options);
-    console.log(dashboard);
-  };
+
+    if (authState === AuthState.SignedIn) {
+      visualizeDashboard();
+    }
+  }, [authState]);
 
   return authState === AuthState.SignedIn && user ? (
     <div className="AppContainer">
       <div className="dashboard" id="dashboard"></div>
-      <button onClick={onClick}>click me</button>
     </div>
   ) : (
     <AmplifyAuthenticator>
