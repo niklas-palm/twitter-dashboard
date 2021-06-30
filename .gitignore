@@ -27,3 +27,5 @@ template-secret-pipeline-parameters.json
 *.toml
 
 *.aws*
+
+*aws-exports.js
